@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Pomodoro</string>
+    <string name="_timerValue">0:15</string>
+    <string name="play_button_content_description">Play button</string>
+    <string name="session_label">Work session</string>
+    <string name="stop_button">Stop Button</string>
+    <string name="pause_button">Pause Button</string>
+</resources>
