@@ -8,68 +8,99 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-/*
-    TODO: When Pause or Stop clicked after the timer is stoped, the Progress bar doesn't react.
-
-*/
 public class MainActivity extends AppCompatActivity {
 
-    static final long RESET_VALUE = 8000;
+    static final long RESET_VALUE = 10000;
     private TextView timerTextView;
     private long timeLeftMilliseconds = RESET_VALUE;
     private CountDownTimer countdownTimer;
     private ProgressBar mProgressBar;
     private int mProgressStatus = 100;
-    private boolean isStartClicked = false;
-    private boolean isTimerPaused = false;
     private Handler mHandler = new Handler();
+    private TimerState timerState = TimerState.NOTEXISTING;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        timerTextView = (TextView) findViewById(R.id.timerView);
-        mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
+        timerTextView = findViewById(R.id.timerView);
+        mProgressBar = findViewById(R.id.progressBar);
         mProgressBar.setProgress(mProgressStatus);
         updateTimer();
     }
 
     public void startButtonOnClick(View view) {
-        if(!isTimerPaused) {
-            startProgressBar();
-        }
-        else {
-            startCountdownTimer();
-            isTimerPaused = false;
+        switch (timerState) {
+            case NOTEXISTING:
+                startProgressBar();
+                timerState = TimerState.WORKING;
+                break;
+            case WORKING:
+                break;
+            case PAUSED:
+                timerState = TimerState.WORKING;
+                startCountdownTimer();
+                break;
+            case STOPPED:
+                startProgressBar();
+                timerState = TimerState.WORKING;
+                break;
         }
     }
 
     public void pauseButtonOnClick(View view) {
+        switch (timerState) {
+            case NOTEXISTING:
+                break;
+            case WORKING:
+                pauseCountDownTimer();
+                break;
+            case PAUSED:
+                break;
+            case STOPPED:
+                break;
+        }
+    }
+
+    public void stopButtonOnClick(View view) {
+        switch (timerState) {
+            case NOTEXISTING:
+                break;
+            case WORKING:
+                stopCountDownTimer();
+                stopProgressBar();
+                resetCountDownTimer();
+                resetProgressBar();
+                timerState = TimerState.STOPPED;
+                break;
+            case PAUSED:
+                stopCountDownTimer();
+                stopProgressBar();
+                resetCountDownTimer();
+                resetProgressBar();
+                timerState = TimerState.STOPPED;
+                break;
+            case STOPPED:
+                break;
+        }
+    }
+
+    public void pauseCountDownTimer() {
         try {
             if(countdownTimer == null) {
                 return;
             }
             long tempTimeLeft = timeLeftMilliseconds;
-            isTimerPaused = true;
             countdownTimer.cancel();
             timeLeftMilliseconds = tempTimeLeft;
+            timerState = TimerState.PAUSED;
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void stopButtonOnClick(View view) {
-        try {
-            if(countdownTimer == null) {
-                return;
-            }
-            countdownTimer.cancel();
-            resetCountDownTimer();
-            mProgressStatus = 0;
-            isTimerPaused = false;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+
+    private void resetProgressBar() {
 
     }
 
@@ -102,49 +133,43 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startProgressBar() {
-        if(isStartClicked) {
-            return;
-        }
-        else {
-            startCountdownTimer();
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    isStartClicked = true;
-                    while(mProgressStatus > 0) {
-                        if(isTimerPaused) {
-                            try {
-                                Thread.sleep(200);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
+        startCountdownTimer();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (mProgressStatus > 0) {
+                    if (timerState == TimerState.PAUSED) {
+                        try {
+                            Thread.sleep(200);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        mProgressStatus--;
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                mProgressBar.setProgress(mProgressStatus);
                             }
-                        } else {
-                            mProgressStatus--;
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    mProgressBar.setProgress(mProgressStatus);
-                                }
-                            });
-                            try {
-                                Thread.sleep(RESET_VALUE/100);
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                            }
+                        });
+                        try {
+                            Thread.sleep(RESET_VALUE / 100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
                     }
-                    mProgressStatus = 100;
-                    mProgressBar.setProgress(mProgressStatus);
-                    isStartClicked = false;
-                    mHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            resetCountDownTimer();
-                        }
-                    });
                 }
-            }).start();
-        }
+                mProgressStatus = 100;
+                mProgressBar.setProgress(mProgressStatus);
+                timerState = TimerState.STOPPED;
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        resetCountDownTimer();
+                    }
+                });
+            }
+        }).start();
     }
 
     public void resetCountDownTimer() {
@@ -152,4 +177,17 @@ public class MainActivity extends AppCompatActivity {
         updateTimer();
     }
 
+    public void stopProgressBar() {
+        mProgressStatus = 0;
+    }
+
+    public void stopCountDownTimer() {
+        if(countdownTimer == null) {
+            return;
+        } else {
+            countdownTimer.cancel();
+        }
+    }
+
 }
+
