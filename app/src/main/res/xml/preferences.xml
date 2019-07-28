@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:defaultValue="25"
+        android:key="workDuration"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:title="Edit work session duration"
+        android:inputType="numberDecimal" />
+</PreferenceScreen>

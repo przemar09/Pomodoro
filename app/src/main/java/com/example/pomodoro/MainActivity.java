@@ -1,12 +1,18 @@
 package com.example.pomodoro;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.CountDownTimer;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -18,6 +24,29 @@ public class MainActivity extends AppCompatActivity {
     private int mProgressStatus = 100;
     private Handler mHandler = new Handler();
     private TimerState timerState = TimerState.NOTEXISTING;
+    private long timeLeftResetValue;
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.settings:
+                Intent intent = new Intent(this, SettingsActivity.class);
+                startActivity(intent);
+                return true;
+            case R.id.about:
+                Toast.makeText(this,"About selected", Toast.LENGTH_SHORT).show();
+                return true;
+                default:
+                    return super.onOptionsItemSelected(item);
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.settings_menu, menu);
+        return true;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,8 +54,27 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         timerTextView = findViewById(R.id.timerView);
         mProgressBar = findViewById(R.id.progressBar);
+
+        android.support.v7.preference.PreferenceManager
+                .setDefaultValues(this, R.xml.preferences, false);
+        SharedPreferences sharedPref =
+                android.support.v7.preference.PreferenceManager
+                        .getDefaultSharedPreferences(this);
+        String workTime = sharedPref.getString
+                 (SettingsActivity.KEY_PREF_WORK_DURATION, "default");
+        Toast.makeText(this, workTime,
+                Toast.LENGTH_SHORT).show();
+
+        try{
+            int workDuration = Integer.parseInt(workTime);
+            timeLeftMilliseconds = workDuration * 1000 * 60;
+            timeLeftResetValue = timeLeftMilliseconds;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         mProgressBar.setProgress(mProgressStatus);
         updateTimer();
+
     }
 
     public void startButtonOnClick(View view) {
@@ -153,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                         try {
-                            Thread.sleep(RESET_VALUE / 100);
+                            Thread.sleep(timeLeftMilliseconds / 100);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -173,7 +221,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void resetCountDownTimer() {
-        timeLeftMilliseconds = RESET_VALUE;
+        timeLeftMilliseconds = timeLeftResetValue;
         updateTimer();
     }
 
